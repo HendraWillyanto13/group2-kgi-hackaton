@@ -38,13 +38,13 @@ const ManageSource = () => {
     try {
       setLoading(true)
       const response = await getDocuments()
-      const processedDocs = response.documents.map((doc, index) => ({
+      const processedDocs = response.pdfs.map((doc, index) => ({
         id: doc.stored_filename || `doc-${index}`,
         name: doc.original_filename,
         storedFilename: doc.stored_filename,
-        uploadDate: new Date(doc.uploaded_time),
+        uploadDate: new Date(doc.processed_time || doc.uploaded_time),
         size: doc.file_size || 0,
-        fileHash: doc.stored_filename, // Using stored_filename as unique identifier
+        fileHash: doc.file_hash, // Use file_hash for deletion
       }))
       setDocuments(processedDocs)
     } catch (error) {
@@ -147,12 +147,12 @@ const ManageSource = () => {
     }
 
     try {
-      const selectedFilenames = Array.from(selectedDocuments).map(id => {
+      const selectedFileHashes = Array.from(selectedDocuments).map(id => {
         const doc = documents.find(d => d.id === id)
-        return doc.storedFilename
+        return doc.fileHash
       })
 
-      const result = await deleteDocuments(selectedFilenames)
+      const result = await deleteDocuments(selectedFileHashes)
       
       if (result.total_deleted > 0) {
         toast.success(`Delete Successfully - ${result.total_deleted} files deleted`)

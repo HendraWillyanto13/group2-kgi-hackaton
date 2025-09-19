@@ -261,6 +261,68 @@ class FAISSVectorStore:
             print(f"Warning: Failed to delete FAISS index: {str(e)}")
             return False
     
+    def remove_document_embeddings(self, file_hash: str) -> bool:
+        """
+        Remove embeddings for a specific document by rebuilding the index without that document.
+        
+        Args:
+            file_hash: The file hash of the document to remove
+            
+        Returns:
+            bool: True if removal was successful, False if document not found
+        """
+        try:
+            # Load existing index and metadata
+            index, metadata = self.load_index()
+            
+            if not metadata or "chunks" not in metadata:
+                return False
+            
+            # Find indices of chunks belonging to the document to remove
+            chunks_to_keep = []
+            indices_to_keep = []
+            
+            for i, chunk_info in enumerate(metadata["chunks"]):
+                if chunk_info.get("file_hash") != file_hash:
+                    chunks_to_keep.append(chunk_info)
+                    indices_to_keep.append(i)
+            
+            # If no chunks were found for this document, return False
+            if len(chunks_to_keep) == len(metadata["chunks"]):
+                return False
+            
+            # If all chunks belong to the document being deleted, delete the entire index
+            if len(chunks_to_keep) == 0:
+                self.delete_index()
+                return True
+            
+            # Rebuild the index with remaining embeddings
+            # Get all embeddings from the current index
+            all_embeddings = np.zeros((index.ntotal, index.d), dtype=np.float32)
+            for i in range(index.ntotal):
+                all_embeddings[i] = index.reconstruct(i)
+            
+            # Keep only embeddings for documents we're not deleting
+            remaining_embeddings = all_embeddings[indices_to_keep]
+            
+            # Create new index with remaining embeddings
+            new_index = self.create_index(remaining_embeddings.tolist(), index.d)
+            
+            # Update metadata
+            new_metadata = {
+                "chunks": chunks_to_keep,
+                "total_chunks": len(chunks_to_keep)
+            }
+            
+            # Save the updated index and metadata
+            self.save_index(new_index, new_metadata)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error removing document embeddings: {str(e)}")
+            return False
+
     def get_index_info(self) -> Dict:
         """
         Get information about the FAISS index.

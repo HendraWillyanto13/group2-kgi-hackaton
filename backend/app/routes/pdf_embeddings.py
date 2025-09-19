@@ -332,7 +332,7 @@ async def get_processed_pdf_details(file_hash: str):
 @router.delete("/processed-pdfs/{file_hash}")
 async def delete_processed_pdf(file_hash: str):
     """
-    Delete a processed PDF and all associated data (removes from single index and metadata).
+    Delete a processed PDF and all associated data (removes from FAISS index, metadata, and physical file).
     
     Args:
         file_hash: MD5 hash of the PDF file
@@ -351,23 +351,48 @@ async def delete_processed_pdf(file_hash: str):
         if not metadata:
             raise HTTPException(status_code=404, detail=f"Processed PDF not found: {file_hash}")
         
-        # Note: We cannot easily remove specific document embeddings from the single FAISS index
-        # without rebuilding the entire index. This would require:
-        # 1. Loading all documents except the one to delete
-        # 2. Regenerating embeddings
-        # 3. Rebuilding the index
-        # For now, we'll just remove the metadata
+        stored_filename = metadata.get("stored_filename")
+        
+        # Remove from FAISS index
+        faiss_removed = vector_store.remove_document_embeddings(file_hash)
         
         # Delete document metadata
         metadata_deleted = remove_document_metadata(file_hash)
         
+        # Delete physical PDF file from documents directory
+        file_deleted = False
+        if stored_filename:
+            pdf_file_path = DOCUMENTS_DIR / stored_filename
+            if pdf_file_path.exists():
+                try:
+                    pdf_file_path.unlink()
+                    file_deleted = True
+                except Exception as e:
+                    print(f"Warning: Failed to delete physical file {stored_filename}: {str(e)}")
+        
+        # Prepare response
+        deleted_components = {
+            "metadata": metadata_deleted,
+            "faiss_embeddings": faiss_removed,
+            "physical_file": file_deleted
+        }
+        
+        # Determine success level
+        if metadata_deleted and faiss_removed:
+            message = f"Processed PDF {file_hash} completely deleted successfully"
+            if not file_deleted:
+                message += " (warning: physical file could not be deleted)"
+        elif metadata_deleted:
+            message = f"Processed PDF {file_hash} metadata deleted successfully (warning: FAISS embeddings could not be removed)"
+        else:
+            message = f"Failed to delete processed PDF {file_hash}"
+            
         return {
-            "message": f"Processed PDF {file_hash} metadata deleted successfully",
-            "note": "Document embeddings remain in FAISS index. Full index rebuild required to completely remove.",
-            "deleted_components": {
-                "metadata": metadata_deleted,
-                "faiss_embeddings": False  # Would require full rebuild
-            }
+            "message": message,
+            "file_hash": file_hash,
+            "stored_filename": stored_filename,
+            "deleted_components": deleted_components,
+            "success": metadata_deleted or faiss_removed or file_deleted
         }
         
     except HTTPException:
