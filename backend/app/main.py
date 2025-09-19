@@ -7,12 +7,12 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from app.routes import health, upload, detection, pdf_embeddings
+from app.routes import health, upload, detection, pdf_embeddings, chat, system_prompt
 
 # Create FastAPI instance
 app = FastAPI(
     title="FastAPI Backend Service",
-    description="A FastAPI backend service with health check and file upload endpoints",
+    description="A FastAPI backend service with health check, file upload, PDF embeddings, and chat completion endpoints",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -32,6 +32,8 @@ app.include_router(health.router, tags=["Health"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(detection.router, prefix="/api", tags=["Detection"])
 app.include_router(pdf_embeddings.router, prefix="/api", tags=["PDF Embeddings"])
+app.include_router(chat.router, prefix="/api", tags=["Chat"])
+app.include_router(system_prompt.router, prefix="/api", tags=["System Prompt"])
 
 # Mount static files for uploaded images
 UPLOAD_DIR = Path("uploads")

@@ -1,0 +1,42 @@
+{
+  "documents": [
+    {
+      "file_hash": "2469a6949dd3d07c092071df7aac6e4c",
+      "original_filename": "CONMAS.pdf",
+      "stored_filename": "2469a6949dd3d07c092071df7aac6e4c.pdf",
+      "processed_time": "2025-09-19T13:30:30.509075",
+      "pdf_metadata": {
+        "file_name": "2469a6949dd3d07c092071df7aac6e4c.pdf",
+        "file_size": 459196,
+        "page_count": 1,
+        "content_hash": "2c59cfe1f0d9c794b532b91d6fb01d4a",
+        "content_length": 1500,
+        "pdf_title": "",
+        "pdf_author": "",
+        "pdf_subject": "",
+        "pdf_creator": ""
+      },
+      "content": "--- Page 1 ---\na.\nb.\nc.\nd.\na.\nb.\na.\nb.Support Web URL\nhttps://cimtops-support.com/i-Reporter/en/\nSupport WEB Account\nUser ID： Password：User ID： conmasadmin Password：\nSupport Web\n「ConMas i-Reporter」Support Web page.\nYou can download the latest software and refer the manual on the site.\nPlease contact us from \"Inquiry\" on the page if you have any questions.「ConMas Designer」「i-Reporter App.」Initial user account:\nUser ID： user01 Password：\n「ConMas Manager」Administrator account (Full authority):From 「ConMas Manager（Web Application）」 server URL\n「External System Coordination Web API」server URL\nAccount Information\nHere is the initial user ID and password in order to use ConMas i-Reporter trial version.\n　※Please change the password due to security protection. Changing password is to\nrefer to the initial setting guide 「STEP 4 : Changing user password 」.ConMas i-Reporter Cloud version\nTrial Setup Guide\n[ Information of connection destination and Account]\nConnection Destination server URL\nFrom「ConMas Designer」: Connection destination server URL\nFrom「i-Reporter tablet App.」: Connection destination server URLhttps://irtrial8a8g.conmas-i-reporter.com/ConMasWeb55LC2KC/Rests/ConMasIReporter.aspx\nhttps://irtrial8a8g.conmas-i-reporter.com/ConMasWeb55LC2KC/Rests/ConMasIReporter.aspx\nhttps://irtrial8a8g.conmas-i-reporter.com/ConMasManager55LC2KC/\nhttps://irtrial8a8g.conmas-i-reporter.com/ConMasAPI55LC2KC/Rests/APIExecute.aspx\nFSYSLKBMRDEMXTNW\ntriresup13494 6kCUvrGs\nPowered by TCPDF (www.tcpdf.org)",
+      "chunks": [
+        "--- Page 1 ---\na.\nb.\nc.\nd.\na.\nb.\na.\nb.Support Web URL\nhttps://cimtops-support.com/i-Reporter/en/\nSupport WEB Account\nUser ID： Password：User ID： conmasadmin Password：\nSupport Web\n「ConMas i-Reporter」Support Web page.\nYou can download the latest software and refer the manual on the site.\nPlease contact us from \"Inquiry\" on the page if you have any questions.「ConMas Designer」「i-Reporter App.」Initial user account:\nUser ID： user01 Password：\n「ConMas Manager」Administrator account (Full authority):From 「ConMas Manager（Web Application）」 server URL\n「External System Coordination Web API」server URL\nAccount Information\nHere is the initial user ID and password in order to use ConMas i-Reporter trial version.\n　※Please change the password due to security protection. Changing password is to\nrefer to the initial setting guide 「STEP 4 : Changing user password 」.ConMas i-Reporter Cloud version\nTrial Setup Guide\n[ Information of connection destination and Account]\nConnection Destination server URL\nFrom「ConMas Designer」: Connection destination server URL\nFrom「i-Reporter tablet App.」: Connection destination server URLhttps://irtrial8a8g.conmas-i-reporter.com/ConMasWeb55LC2KC/Rests/ConMasIReporter.aspx\nhttps://irtrial8a8g.conmas-i-reporter.com/ConMasWeb55LC2KC/Rests/ConMasIReporter.aspx\nhttps://irtrial8a8g.conmas-i-reporter.com/ConMasManager55LC2KC/\nhttps://irtrial8a8g.conmas-i-reporter.com/ConMasAPI55LC2KC/Rests/APIExecute.aspx\nFSYSLKBMRDEMXTNW\ntriresup13494 6kCUvrGs\nPowered by TCPDF (www.tcpdf.org)"
+      ],
+      "chunk_count": 1,
+      "embeddings_info": {
+        "model": "text-embedding-ada-002",
+        "deployment_name": "kgi-embedding-01",
+        "max_tokens": 8191,
+        "api_version": "2024-12-01-preview",
+        "endpoint": "hendr-mdh4hmax-japaneast.openai.azure.com/",
+        "embedding_count": 1,
+        "dimension": 1536
+      }
+    }
+  ],
+  "embeddings_info": {
+    "last_updated": "2025-09-19T13:30:30.509075",
+    "total_documents": 1,
+    "total_chunks": 1,
+    "embedding_model": "text-embedding-ada-002",
+    "embedding_dimension": 1536
+  }
+}
