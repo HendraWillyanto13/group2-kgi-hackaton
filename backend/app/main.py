@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from app.routes import health, upload, detection
+from app.routes import health, upload, detection, pdf_embeddings
 
 # Create FastAPI instance
 app = FastAPI(
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(health.router, tags=["Health"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(detection.router, prefix="/api", tags=["Detection"])
+app.include_router(pdf_embeddings.router, prefix="/api", tags=["PDF Embeddings"])
 
 # Mount static files for uploaded images
 UPLOAD_DIR = Path("uploads")

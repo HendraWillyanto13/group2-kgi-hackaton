@@ -1,0 +1,40 @@
+{
+  "file_info": {
+    "file_hash": "a026a3d21a42d0504b4fc8009bb68c01",
+    "original_filename": "uploads_apr21.pdf",
+    "stored_filename": "a026a3d21a42d0504b4fc8009bb68c01.pdf",
+    "upload_date": "2025-09-19T11:52:49.564676",
+    "file_size": 399968,
+    "file_path": "documents/a026a3d21a42d0504b4fc8009bb68c01.pdf"
+  },
+  "content_info": {
+    "page_count": 12,
+    "content_length": 36131,
+    "content_hash": "3330f586a6374542b9f566926dd9e975",
+    "chunk_count": 3,
+    "pdf_title": "",
+    "pdf_author": "",
+    "pdf_subject": "",
+    "pdf_creator": ""
+  },
+  "embedding_info": {
+    "model": "text-embedding-ada-002",
+    "deployment_name": "kgi-embedding-01",
+    "api_version": "2024-12-01-preview",
+    "endpoint": "hendr-mdh4hmax-japaneast.openai.azure.com/",
+    "embedding_dimension": 3,
+    "processing_date": "2025-09-19T11:52:49.564676"
+  },
+  "vector_storage": {
+    "faiss_filename": "a026a3d21a42d0504b4fc8009bb68c01_embeddings",
+    "faiss_path": "faiss/a026a3d21a42d0504b4fc8009bb68c01_embeddings.faiss",
+    "index_type": "IndexFlatL2",
+    "vector_count": 3
+  },
+  "processing_status": {
+    "status": "completed",
+    "created_at": "2025-09-19T11:52:49.564676",
+    "updated_at": "2025-09-19T11:52:49.564676",
+    "version": "1.0"
+  }
+}
