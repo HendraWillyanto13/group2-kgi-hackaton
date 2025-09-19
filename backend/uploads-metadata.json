@@ -1,10 +1,26 @@
 {
   "uploads": [
     {
-      "original_filename": "manual_test.pdf",
-      "stored_filename": "bc83499952b68f754325d1d2dde379ad.pdf",
-      "uploaded_time": "2025-09-19T11:19:14.567788",
-      "file_size": 328,
+      "original_filename": "SS Hadi 2025.pdf",
+      "stored_filename": "6b1f3bbbf2cd80e86c779a9274767170.pdf",
+      "uploaded_time": "2025-09-19T15:12:15.415117",
+      "file_size": 382101,
+      "storage_location": "documents",
+      "objects": []
+    },
+    {
+      "original_filename": "INV_NB01400_330769.pdf",
+      "stored_filename": "c388644774174e502aa95ec1251f25b6.pdf",
+      "uploaded_time": "2025-09-19T15:13:54.015548",
+      "file_size": 1363797,
+      "storage_location": "documents",
+      "objects": []
+    },
+    {
+      "original_filename": "no fp.pdf",
+      "stored_filename": "b1fea73b739777cef4e7c24425749711.pdf",
+      "uploaded_time": "2025-09-19T15:14:59.001902",
+      "file_size": 655095,
       "storage_location": "documents",
       "objects": []
     },
