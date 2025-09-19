@@ -321,3 +321,231 @@ async def delete_files(request: DeleteFilesRequest):
         raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting files: {str(e)}")
+
+# Create documents directory if it doesn't exist
+DOCUMENTS_DIR = Path("documents")
+DOCUMENTS_DIR.mkdir(exist_ok=True)
+
+def is_pdf_file(filename: str) -> bool:
+    """Check if the file is a PDF based on file extension."""
+    return get_file_extension(filename) == ".pdf"
+
+def validate_pdf_content(content: bytes) -> bool:
+    """Validate PDF content by checking PDF signature."""
+    # PDF files start with %PDF- signature
+    return content.startswith(b'%PDF-')
+
+async def save_pdf_file(file: UploadFile, content: bytes) -> dict:
+    """
+    Save PDF file with MD5 hash as filename and return file info.
+    
+    Args:
+        file: The uploaded file object
+        content: File content bytes
+    
+    Returns:
+        dict: File information including saved path and hash
+    
+    Raises:
+        HTTPException: If file is not a valid PDF
+    """
+    # Validate file extension
+    if not is_pdf_file(file.filename):
+        raise HTTPException(status_code=400, detail=f"File {file.filename} is not a PDF file")
+    
+    # Validate PDF content
+    if not validate_pdf_content(content):
+        raise HTTPException(status_code=400, detail=f"File {file.filename} does not contain valid PDF content")
+    
+    # Calculate MD5 hash
+    file_hash = calculate_md5(content)
+    
+    # Create filename with MD5 hash + .pdf extension
+    hashed_filename = f"{file_hash}.pdf"
+    file_path = DOCUMENTS_DIR / hashed_filename
+    
+    # Check if file already exists (duplicate detection)
+    file_exists = file_path.exists()
+    
+    if file_exists:
+        # File with same hash already exists, reject the upload
+        raise HTTPException(
+            status_code=409, 
+            detail=f"A PDF file with the same content already exists (hash: {file_hash})"
+        )
+    
+    # Save file to documents directory
+    with open(file_path, "wb") as buffer:
+        buffer.write(content)
+    
+    return {
+        "original_filename": file.filename,
+        "saved_filename": hashed_filename,
+        "file_path": str(file_path),
+        "file_hash": file_hash,
+        "size": len(content),
+        "content_type": file.content_type,
+        "storage_location": "documents"
+    }
+
+@router.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    """
+    PDF file upload endpoint that accepts a single PDF file.
+    
+    Before accepting the file, computes MD5 hash and checks if a file with 
+    the same hash already exists. If a duplicate is detected, rejects the upload 
+    and notifies the user. Uploaded files are saved in the 'documents' folder.
+    
+    Args:
+        file: The uploaded PDF file (multipart/form-data)
+    
+    Returns:
+        dict: File information including saved path and hash
+    
+    Raises:
+        HTTPException: 
+            - 400: If no file provided, file is not PDF, or invalid PDF content
+            - 409: If duplicate file detected (same hash exists)
+            - 500: If error processing file
+    """
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No PDF file provided")
+    
+    try:
+        # Read the file content
+        content = await file.read()
+        
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+        
+        # Save PDF file with duplicate detection
+        file_info = await save_pdf_file(file, content)
+        
+        # Add metadata for the uploaded PDF
+        add_upload_metadata(
+            original_filename=file.filename,
+            stored_filename=file_info["saved_filename"],
+            file_size=len(content),
+            storage_location="documents"
+        )
+        
+        return {
+            "file": file_info,
+            "message": f"PDF file '{file.filename}' uploaded successfully",
+            "upload_directory": str(DOCUMENTS_DIR)
+        }
+    
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing PDF file: {str(e)}")
+
+@router.post("/upload-pdfs")
+async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
+    """
+    Multiple PDF file upload endpoint that accepts multiple PDF files.
+    
+    Each file is validated and checked for duplicates before being saved.
+    If any file is a duplicate, the entire upload is rejected.
+    
+    Args:
+        files: List of uploaded PDF files (multipart/form-data)
+    
+    Returns:
+        dict: Information about all uploaded PDF files
+    
+    Raises:
+        HTTPException: If any file validation fails or duplicates detected
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No PDF files provided")
+    
+    uploaded_files = []
+    total_size = 0
+    
+    try:
+        # First pass: validate all files and check for duplicates
+        file_contents = []
+        for file in files:
+            if not file.filename:
+                continue
+            
+            # Read content
+            content = await file.read()
+            file_contents.append((file, content))
+            
+            # Validate file extension
+            if not is_pdf_file(file.filename):
+                raise HTTPException(status_code=400, detail=f"File {file.filename} is not a PDF file")
+            
+            # Validate PDF content
+            if not validate_pdf_content(content):
+                raise HTTPException(status_code=400, detail=f"File {file.filename} does not contain valid PDF content")
+            
+            # Check for duplicate
+            file_hash = calculate_md5(content)
+            hashed_filename = f"{file_hash}.pdf"
+            file_path = DOCUMENTS_DIR / hashed_filename
+            
+            if file_path.exists():
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"PDF file '{file.filename}' already exists (hash: {file_hash})"
+                )
+        
+        # Second pass: save all files (only if all validations passed)
+        for file, content in file_contents:
+            file_info = await save_pdf_file(file, content)
+            uploaded_files.append(file_info)
+            total_size += len(content)
+            
+            # Add metadata
+            add_upload_metadata(
+                original_filename=file.filename,
+                stored_filename=file_info["saved_filename"],
+                file_size=len(content),
+                storage_location="documents"
+            )
+        
+        if not uploaded_files:
+            raise HTTPException(status_code=400, detail="No valid PDF files were uploaded")
+        
+        return {
+            "files": uploaded_files,
+            "total_files": len(uploaded_files),
+            "total_size": total_size,
+            "upload_directory": str(DOCUMENTS_DIR),
+            "message": f"Successfully uploaded {len(uploaded_files)} PDF file{'s' if len(uploaded_files) > 1 else ''}"
+        }
+    
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing PDF files: {str(e)}")
+
+@router.get("/documents")
+async def get_documents():
+    """
+    Get a list of all uploaded PDF documents.
+    
+    Returns:
+        dict: List of PDF documents with their metadata
+    """
+    try:
+        all_uploads = get_all_uploads_metadata()
+        
+        # Filter only documents (PDFs stored in documents folder)
+        documents = [
+            upload for upload in all_uploads 
+            if upload.get("storage_location") == "documents"
+        ]
+        
+        return {
+            "documents": documents,
+            "total_documents": len(documents),
+            "storage_directory": str(DOCUMENTS_DIR)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving documents: {str(e)}")
