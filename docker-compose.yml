@@ -1,0 +1,73 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: object-detection-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Application settings
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+
+      # Azure Computer Vision API (required for object detection)
+      - VISION_ENDPOINT=${VISION_ENDPOINT}
+      - VISION_KEY=${VISION_KEY}
+
+      # Azure OpenAI API (for future RAG functionality)
+      - AOAI_ENDPOINT=${AOAI_ENDPOINT}
+      - AOAI_KEY=${AOAI_KEY}
+
+      # Azure AI Search (for future RAG functionality)
+      - SEARCH_ENDPOINT=${SEARCH_ENDPOINT}
+      - SEARCH_KEY=${SEARCH_KEY}
+    volumes:
+      # Persist uploaded files
+      - backend_uploads:/home/appuser/app/uploads
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: object-detection-frontend
+    ports:
+      - "3000:80"
+    environment:
+      # Frontend API configuration - use empty string for relative URLs
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-}
+      # Backend host for nginx proxy (backend service name for docker-compose)
+      - BACKEND_HOST=${BACKEND_HOST:-backend}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  backend_uploads:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

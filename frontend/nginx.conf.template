@@ -1,0 +1,36 @@
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Handle React Router routes
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Handle API requests (proxy to backend)
+    location /api/ {
+        proxy_pass http://${BACKEND_HOST}:8000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Handle uploaded files (proxy to backend)
+    location /uploads/ {
+        proxy_pass http://${BACKEND_HOST}:8000/uploads/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
