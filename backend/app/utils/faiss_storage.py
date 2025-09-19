@@ -15,17 +15,19 @@ from fastapi import HTTPException
 
 
 class FAISSVectorStore:
-    """FAISS vector storage manager for PDF embeddings."""
+    """FAISS vector storage manager for PDF embeddings with single index."""
     
     def __init__(self, storage_dir: str = "faiss"):
         """
-        Initialize FAISS vector store.
+        Initialize FAISS vector store with single index files in faiss directory.
         
         Args:
-            storage_dir: Directory to store FAISS index files
+            storage_dir: Directory to store FAISS index files (default: faiss)
         """
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(exist_ok=True)
+        self.index_file = self.storage_dir / "FAISS.index"
+        self.metadata_file = self.storage_dir / "FAISS.pkl"
         
     def create_index(self, embeddings: List[List[float]], dimension: int = None) -> faiss.IndexFlatL2:
         """
@@ -70,13 +72,12 @@ class FAISSVectorStore:
                 detail=f"Failed to create FAISS index: {str(e)}"
             )
     
-    def save_index(self, index: faiss.IndexFlatL2, filename: str, metadata: Dict = None) -> Path:
+    def save_index(self, index: faiss.IndexFlatL2, metadata: Dict = None) -> Path:
         """
-        Save FAISS index to file with optional metadata.
+        Save FAISS index to the single index file with optional metadata.
         
         Args:
             index: FAISS index to save
-            filename: Name for the index file (without extension)
             metadata: Optional metadata to save alongside the index
             
         Returns:
@@ -86,22 +87,15 @@ class FAISSVectorStore:
             HTTPException: If saving fails
         """
         try:
-            # Ensure filename has no extension
-            base_filename = Path(filename).stem
-            
-            # Create file paths
-            index_path = self.storage_dir / f"{base_filename}.faiss"
-            metadata_path = self.storage_dir / f"{base_filename}_metadata.pkl"
-            
             # Save FAISS index
-            faiss.write_index(index, str(index_path))
+            faiss.write_index(index, str(self.index_file))
             
             # Save metadata if provided
             if metadata:
-                with open(metadata_path, 'wb') as f:
+                with open(self.metadata_file, 'wb') as f:
                     pickle.dump(metadata, f)
             
-            return index_path
+            return self.index_file
             
         except Exception as e:
             raise HTTPException(
@@ -109,12 +103,9 @@ class FAISSVectorStore:
                 detail=f"Failed to save FAISS index: {str(e)}"
             )
     
-    def load_index(self, filename: str) -> Tuple[faiss.IndexFlatL2, Dict]:
+    def load_index(self) -> Tuple[faiss.IndexFlatL2, Dict]:
         """
-        Load FAISS index from file with metadata.
-        
-        Args:
-            filename: Name of the index file (without extension)
+        Load FAISS index from the single index file with metadata.
             
         Returns:
             Tuple[faiss.IndexFlatL2, Dict]: The loaded index and metadata
@@ -123,24 +114,17 @@ class FAISSVectorStore:
             HTTPException: If loading fails
         """
         try:
-            # Ensure filename has no extension
-            base_filename = Path(filename).stem
-            
-            # Create file paths
-            index_path = self.storage_dir / f"{base_filename}.faiss"
-            metadata_path = self.storage_dir / f"{base_filename}_metadata.pkl"
-            
             # Check if index file exists
-            if not index_path.exists():
-                raise FileNotFoundError(f"FAISS index file not found: {index_path}")
+            if not self.index_file.exists():
+                raise FileNotFoundError(f"FAISS index file not found: {self.index_file}")
             
             # Load FAISS index
-            index = faiss.read_index(str(index_path))
+            index = faiss.read_index(str(self.index_file))
             
             # Load metadata if available
             metadata = {}
-            if metadata_path.exists():
-                with open(metadata_path, 'rb') as f:
+            if self.metadata_file.exists():
+                with open(self.metadata_file, 'rb') as f:
                     metadata = pickle.load(f)
             
             return index, metadata
@@ -151,12 +135,74 @@ class FAISSVectorStore:
                 detail=f"Failed to load FAISS index: {str(e)}"
             )
     
-    def search_index(self, index: faiss.IndexFlatL2, query_embedding: List[float], k: int = 5) -> Tuple[List[float], List[int]]:
+    def add_to_index(self, new_embeddings: List[List[float]], new_metadata: Dict = None) -> faiss.IndexFlatL2:
         """
-        Search FAISS index for similar embeddings.
+        Add new embeddings to the existing index or create a new one if none exists.
         
         Args:
-            index: FAISS index to search
+            new_embeddings: List of new embedding vectors to add
+            new_metadata: New metadata to add or merge with existing
+            
+        Returns:
+            faiss.IndexFlatL2: The updated FAISS index
+            
+        Raises:
+            HTTPException: If adding embeddings fails
+        """
+        try:
+            if not new_embeddings:
+                raise ValueError("No new embeddings provided")
+            
+            new_embedding_array = np.array(new_embeddings, dtype=np.float32)
+            dimension = new_embedding_array.shape[1]
+            
+            # Try to load existing index
+            try:
+                existing_index, existing_metadata = self.load_index()
+                
+                # Validate dimensions match
+                if existing_index.d != dimension:
+                    raise ValueError(f"Embedding dimension mismatch: existing {existing_index.d}, new {dimension}")
+                
+                # Add new embeddings to existing index
+                existing_index.add(new_embedding_array)
+                
+                # Merge metadata
+                if new_metadata:
+                    if existing_metadata:
+                        # Merge the metadata - you can customize this logic based on your needs
+                        for key, value in new_metadata.items():
+                            if key in existing_metadata:
+                                if isinstance(existing_metadata[key], list) and isinstance(value, list):
+                                    existing_metadata[key].extend(value)
+                                else:
+                                    existing_metadata[key] = value
+                            else:
+                                existing_metadata[key] = value
+                    else:
+                        existing_metadata = new_metadata
+                
+                # Save the updated index
+                self.save_index(existing_index, existing_metadata)
+                return existing_index
+                
+            except (FileNotFoundError, HTTPException):
+                # No existing index, create a new one
+                new_index = self.create_index(new_embeddings, dimension)
+                self.save_index(new_index, new_metadata)
+                return new_index
+                
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to add embeddings to index: {str(e)}"
+            )
+    
+    def search_index(self, query_embedding: List[float], k: int = 5) -> Tuple[List[float], List[int]]:
+        """
+        Search the FAISS index for similar embeddings.
+        
+        Args:
             query_embedding: Query embedding vector
             k: Number of nearest neighbors to return
             
@@ -167,6 +213,9 @@ class FAISSVectorStore:
             HTTPException: If search fails
         """
         try:
+            # Load the index
+            index, _ = self.load_index()
+            
             # Convert query to numpy array
             query_array = np.array([query_embedding], dtype=np.float32)
             
@@ -181,79 +230,62 @@ class FAISSVectorStore:
                 detail=f"Failed to search FAISS index: {str(e)}"
             )
     
-    def list_indices(self) -> List[str]:
+    def index_exists(self) -> bool:
         """
-        List all available FAISS index files.
+        Check if the FAISS index file exists.
         
         Returns:
-            List[str]: List of index filenames (without extension)
+            bool: True if index exists, False otherwise
         """
-        try:
-            index_files = list(self.storage_dir.glob("*.faiss"))
-            return [f.stem for f in index_files]
-            
-        except Exception as e:
-            print(f"Warning: Failed to list FAISS indices: {str(e)}")
-            return []
+        return self.index_file.exists()
     
-    def delete_index(self, filename: str) -> bool:
+    def delete_index(self) -> bool:
         """
-        Delete FAISS index and associated metadata.
-        
-        Args:
-            filename: Name of the index file (without extension)
+        Delete the FAISS index and associated metadata.
             
         Returns:
             bool: True if deletion was successful
         """
         try:
-            # Ensure filename has no extension
-            base_filename = Path(filename).stem
-            
-            # Create file paths
-            index_path = self.storage_dir / f"{base_filename}.faiss"
-            metadata_path = self.storage_dir / f"{base_filename}_metadata.pkl"
-            
-            # Delete files if they exist
             deleted = False
-            if index_path.exists():
-                index_path.unlink()
+            if self.index_file.exists():
+                self.index_file.unlink()
                 deleted = True
             
-            if metadata_path.exists():
-                metadata_path.unlink()
+            if self.metadata_file.exists():
+                self.metadata_file.unlink()
             
             return deleted
             
         except Exception as e:
-            print(f"Warning: Failed to delete FAISS index {filename}: {str(e)}")
+            print(f"Warning: Failed to delete FAISS index: {str(e)}")
             return False
     
-    def get_index_info(self, filename: str) -> Dict:
+    def get_index_info(self) -> Dict:
         """
-        Get information about a FAISS index.
-        
-        Args:
-            filename: Name of the index file (without extension)
+        Get information about the FAISS index.
             
         Returns:
             Dict: Information about the index
         """
         try:
-            index, metadata = self.load_index(filename)
+            if not self.index_file.exists():
+                return {"error": "Index file does not exist"}
+                
+            index, metadata = self.load_index()
             
             return {
-                "filename": filename,
+                "filename": "FAISS.index",
                 "dimension": index.d,
                 "total_vectors": index.ntotal,
                 "index_type": type(index).__name__,
                 "metadata": metadata,
-                "file_size": os.path.getsize(self.storage_dir / f"{filename}.faiss")
+                "file_size": os.path.getsize(self.index_file)
             }
             
         except Exception as e:
             return {
-                "filename": filename,
+                "filename": "FAISS.index",
                 "error": str(e)
             }
 
