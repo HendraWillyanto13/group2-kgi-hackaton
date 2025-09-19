@@ -393,7 +393,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     """
     PDF file upload endpoint that accepts a single PDF file.
     
-    Before accepting the file, computes SHA-256 hash and checks if a file with 
+    Before accepting the file, computes MD5 hash and checks if a file with 
     the same hash already exists. If a duplicate is detected, rejects the upload 
     and notifies the user. Uploaded files are saved in the 'documents' folder.
     
