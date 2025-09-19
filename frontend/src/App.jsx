@@ -6,6 +6,7 @@ import { toast } from './hooks/use-toast'
 import UploadPage from './pages/UploadPage'
 import UploadList from './pages/UploadList'
 import ManageSource from './pages/ManageSource'
+import UploadDocument from './pages/UploadDocument'
 
 function HomePage() {
   const handleUploadImage = () => {
@@ -47,13 +48,15 @@ function HomePage() {
               </Button>
             </Link>
             
-            <Button 
-              onClick={handleUploadDocument}
-              className="w-full gap-2 text-lg px-6 py-4 h-auto"
-            >
-              <FileText className="h-6 w-6" />
-              Upload Document
-            </Button>
+            <Link to="/upload-document" className="block">
+              <Button 
+                onClick={handleUploadDocument}
+                className="w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <FileText className="h-6 w-6" />
+                Upload Document
+              </Button>
+            </Link>
             
             <Button 
               onClick={handleAsk}
@@ -91,6 +94,7 @@ function App() {
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/files" element={<UploadList />} />
         <Route path="/manage-source" element={<ManageSource />} />
+        <Route path="/upload-document" element={<UploadDocument />} />
       </Routes>
       <Toaster />
     </BrowserRouter>
