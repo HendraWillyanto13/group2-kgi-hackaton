@@ -49,7 +49,7 @@ def save_metadata(metadata: Dict) -> None:
     except IOError as e:
         raise HTTPException(status_code=500, detail=f"Error saving metadata: {str(e)}")
 
-def add_upload_metadata(original_filename: str, stored_filename: str, file_size: int, objects: List[Dict] = None) -> None:
+def add_upload_metadata(original_filename: str, stored_filename: str, file_size: int, objects: List[Dict] = None, storage_location: str = "uploads") -> None:
     """
     Add metadata for a newly uploaded file.
     
@@ -58,6 +58,7 @@ def add_upload_metadata(original_filename: str, stored_filename: str, file_size:
         stored_filename: The filename used to store the file (MD5 hash + extension)
         file_size: Size of the file in bytes
         objects: List of detected objects from object detection API (optional)
+        storage_location: Directory where the file is stored ("uploads" or "documents")
     """
     metadata = get_metadata()
     
@@ -66,6 +67,7 @@ def add_upload_metadata(original_filename: str, stored_filename: str, file_size:
         "stored_filename": stored_filename,
         "uploaded_time": datetime.now().isoformat(),
         "file_size": file_size,
+        "storage_location": storage_location,
         "objects": objects or []
     }
     
