@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { toast } from '../hooks/use-toast'
-import { getProcessedPDFs, deleteProcessedPDF, getPDFUrl } from '../lib/api'
+import { getDocuments, deleteDocuments, getPDFUrl } from '../lib/api'
 
 const ManageSource = () => {
   const [documents, setDocuments] = useState([])
@@ -37,14 +37,14 @@ const ManageSource = () => {
   const loadDocuments = async () => {
     try {
       setLoading(true)
-      const response = await getProcessedPDFs()
-      const processedDocs = response.pdfs.map(pdf => ({
-        id: pdf.file_info.file_hash,
-        name: pdf.file_info.original_filename,
-        storedFilename: pdf.file_info.stored_filename,
-        uploadDate: new Date(pdf.file_info.upload_date),
-        size: pdf.file_info.file_size || 0,
-        fileHash: pdf.file_info.file_hash,
+      const response = await getDocuments()
+      const processedDocs = response.documents.map((doc, index) => ({
+        id: doc.stored_filename || `doc-${index}`,
+        name: doc.original_filename,
+        storedFilename: doc.stored_filename,
+        uploadDate: new Date(doc.uploaded_time),
+        size: doc.file_size || 0,
+        fileHash: doc.stored_filename, // Using stored_filename as unique identifier
       }))
       setDocuments(processedDocs)
     } catch (error) {
@@ -147,14 +147,18 @@ const ManageSource = () => {
     }
 
     try {
-      const deletePromises = Array.from(selectedDocuments).map(id => {
+      const selectedFilenames = Array.from(selectedDocuments).map(id => {
         const doc = documents.find(d => d.id === id)
-        return deleteProcessedPDF(doc.fileHash)
+        return doc.storedFilename
       })
 
-      await Promise.all(deletePromises)
+      const result = await deleteDocuments(selectedFilenames)
       
-      toast.success('Delete Successfully')
+      if (result.total_deleted > 0) {
+        toast.success(`Delete Successfully - ${result.total_deleted} files deleted`)
+      } else {
+        toast.error('No files were deleted')
+      }
       
       setSelectedDocuments(new Set())
       await loadDocuments()
