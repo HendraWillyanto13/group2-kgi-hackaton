@@ -15,7 +15,12 @@ from pydantic import BaseModel
 from ..utils.pdf_processor import extract_text_from_pdf, chunk_text, get_pdf_metadata
 from ..utils.azure_openai_service import embedding_service
 from ..utils.faiss_storage import vector_store
-from ..utils.pdf_metadata import pdf_metadata_manager
+from ..utils.metadata import (
+    add_document_metadata, 
+    get_document_metadata, 
+    get_all_documents_metadata, 
+    remove_document_metadata
+)
 
 
 router = APIRouter()
@@ -47,14 +52,14 @@ def calculate_file_hash(content: bytes) -> str:
 
 def save_pdf_file(file: UploadFile, content: bytes) -> Dict:
     """
-    Save PDF file with hash as filename.
+    Save PDF file with hash as filename to documents directory.
     
     Args:
         file: The uploaded file object
         content: File content bytes
         
     Returns:
-        Dict: File information including saved path and hash
+        Dict: File information including hash and path
     """
     # Calculate MD5 hash
     file_hash = calculate_file_hash(content)
@@ -64,32 +69,28 @@ def save_pdf_file(file: UploadFile, content: bytes) -> Dict:
     file_path = DOCUMENTS_DIR / hashed_filename
     
     # Check if file already exists
-    if file_path.exists():
-        return {
-            "file_hash": file_hash,
-            "saved_filename": hashed_filename,
-            "file_path": str(file_path),
-            "already_exists": True
-        }
+    already_exists = file_path.exists()
     
-    # Save the file
-    with open(file_path, "wb") as f:
-        f.write(content)
+    if not already_exists:
+        # Save the file
+        with open(file_path, "wb") as f:
+            f.write(content)
     
     return {
         "file_hash": file_hash,
         "saved_filename": hashed_filename,
         "file_path": str(file_path),
-        "already_exists": False
+        "file_content": content,
+        "already_exists": already_exists
     }
 
 
 async def process_pdf_embeddings(file_info: Dict, original_filename: str) -> Dict:
     """
-    Process PDF file to generate embeddings and store in FAISS.
+    Process PDF file to generate embeddings and store in single FAISS index.
     
     Args:
-        file_info: Information about the saved PDF file
+        file_info: Information about the PDF file
         original_filename: Original name of the uploaded file
         
     Returns:
@@ -108,10 +109,8 @@ async def process_pdf_embeddings(file_info: Dict, original_filename: str) -> Dic
     file_path = Path(file_info["file_path"])
     
     try:
-        # Extract text content from PDF
+        # Extract text content from PDF file
         content = extract_text_from_pdf(file_path)
-        
-        # Get PDF metadata
         pdf_metadata = get_pdf_metadata(file_path, content)
         
         # Chunk the text for embeddings
@@ -120,55 +119,51 @@ async def process_pdf_embeddings(file_info: Dict, original_filename: str) -> Dic
         # Generate embeddings for all chunks
         embeddings = await embedding_service.generate_embeddings_batch(chunks)
         
-        # Create FAISS index
-        index = vector_store.create_index(embeddings)
+        # Prepare metadata for FAISS index
+        chunk_metadata = []
+        for i, chunk in enumerate(chunks):
+            chunk_metadata.append({
+                "file_hash": file_hash,
+                "original_filename": original_filename,
+                "chunk_index": i,
+                "chunk_text": chunk
+            })
         
-        # Save FAISS index
-        faiss_filename = f"{file_hash}_embeddings"
         faiss_metadata = {
-            "file_hash": file_hash,
-            "original_filename": original_filename,
-            "chunks": chunks,
-            "embedding_count": len(embeddings),
-            "dimension": len(embeddings[0]) if embeddings else 0
+            "chunks": chunk_metadata,
+            "total_chunks": len(chunks)
         }
         
-        faiss_path = vector_store.save_index(index, faiss_filename, faiss_metadata)
+        # Add embeddings to the single FAISS index
+        vector_store.add_to_index(embeddings, faiss_metadata)
         
-        # Create comprehensive metadata
+        # Get embedding info
         embedding_info = embedding_service.get_embedding_info()
-        metadata = pdf_metadata_manager.create_pdf_metadata(
+        embedding_info["embedding_count"] = len(embeddings)
+        embedding_info["dimension"] = len(embeddings[0]) if embeddings else 0
+        
+        # Add document metadata
+        add_document_metadata(
             file_hash=file_hash,
             original_filename=original_filename,
             stored_filename=file_info["saved_filename"],
             pdf_metadata=pdf_metadata,
             content=content,
             chunks=chunks,
-            embeddings_info=embedding_info,
-            faiss_filename=faiss_filename
+            embeddings_info=embedding_info
         )
-        
-        # Save metadata
-        metadata_path = pdf_metadata_manager.save_pdf_metadata(file_hash, metadata)
         
         return {
             "content_length": len(content),
             "chunk_count": len(chunks),
             "embedding_count": len(embeddings),
             "embedding_dimension": len(embeddings[0]) if embeddings else 0,
-            "faiss_filename": faiss_filename,
-            "faiss_path": str(faiss_path),
-            "metadata_path": str(metadata_path)
+            "faiss_filename": "FAISS.index",
+            "faiss_path": str(vector_store.index_file),
+            "metadata_saved": True
         }
         
     except Exception as e:
-        # Clean up on failure
-        try:
-            vector_store.delete_index(f"{file_hash}_embeddings")
-            pdf_metadata_manager.delete_pdf_metadata(file_hash)
-        except:
-            pass  # Ignore cleanup errors
-        
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process PDF embeddings: {str(e)}"
@@ -223,27 +218,28 @@ async def process_pdf_with_embeddings(
         if file_info["already_exists"]:
             try:
                 # Try to load existing metadata
-                existing_metadata = pdf_metadata_manager.load_pdf_metadata(file_info["file_hash"])
+                existing_metadata = get_document_metadata(file_info["file_hash"])
                 
-                return ProcessPDFResponse(
-                    message=f"PDF '{file.filename}' already processed",
-                    file_info=file_info,
-                    processing_info={
-                        "status": "already_exists",
-                        "chunk_count": existing_metadata.get("content_info", {}).get("chunk_count", 0),
-                        "embedding_count": existing_metadata.get("vector_storage", {}).get("vector_count", 0)
-                    },
-                    faiss_info={
-                        "filename": existing_metadata.get("vector_storage", {}).get("faiss_filename", ""),
-                        "path": existing_metadata.get("vector_storage", {}).get("faiss_path", "")
-                    },
-                    metadata_info={
-                        "status": "exists",
-                        "upload_date": existing_metadata.get("file_info", {}).get("upload_date", "")
-                    }
-                )
+                if existing_metadata:
+                    return ProcessPDFResponse(
+                        message=f"PDF '{file.filename}' already processed",
+                        file_info=file_info,
+                        processing_info={
+                            "status": "already_exists",
+                            "chunk_count": existing_metadata.get("chunk_count", 0),
+                            "embedding_count": existing_metadata.get("embeddings_info", {}).get("embedding_count", 0)
+                        },
+                        faiss_info={
+                            "filename": "FAISS.index",
+                            "path": str(vector_store.index_file)
+                        },
+                        metadata_info={
+                            "status": "exists",
+                            "upload_date": existing_metadata.get("processed_time", "")
+                        }
+                    )
                 
-            except HTTPException:
+            except Exception:
                 # If metadata doesn't exist, process as new file
                 pass
         
@@ -266,7 +262,7 @@ async def process_pdf_with_embeddings(
             },
             metadata_info={
                 "status": "created",
-                "path": processing_results["metadata_path"]
+                "saved": processing_results["metadata_saved"]
             }
         )
         
@@ -285,11 +281,11 @@ async def list_processed_pdfs():
         ListProcessedPDFsResponse: List of processed PDFs with metadata
     """
     try:
-        pdf_metadata_list = pdf_metadata_manager.list_pdf_metadata()
+        documents_list = get_all_documents_metadata()
         
         return ListProcessedPDFsResponse(
-            pdfs=pdf_metadata_list,
-            total_count=len(pdf_metadata_list)
+            pdfs=documents_list,
+            total_count=len(documents_list)
         )
         
     except Exception as e:
@@ -313,22 +309,21 @@ async def get_processed_pdf_details(file_hash: str):
             - 500: If error retrieving metadata
     """
     try:
-        metadata = pdf_metadata_manager.load_pdf_metadata(file_hash)
+        metadata = get_document_metadata(file_hash)
+        
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"Processed PDF not found: {file_hash}")
         
         # Add FAISS index information
-        faiss_filename = metadata.get("vector_storage", {}).get("faiss_filename", "")
-        if faiss_filename:
-            try:
-                faiss_info = vector_store.get_index_info(faiss_filename)
-                metadata["faiss_index_info"] = faiss_info
-            except:
-                metadata["faiss_index_info"] = {"error": "Could not load FAISS index info"}
+        try:
+            faiss_info = vector_store.get_index_info()
+            metadata["faiss_index_info"] = faiss_info
+        except:
+            metadata["faiss_index_info"] = {"error": "Could not load FAISS index info"}
         
         return metadata
         
-    except HTTPException as e:
-        if "not found" in str(e.detail).lower():
-            raise HTTPException(status_code=404, detail=f"Processed PDF not found: {file_hash}")
+    except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving PDF details: {str(e)}")
@@ -337,7 +332,7 @@ async def get_processed_pdf_details(file_hash: str):
 @router.delete("/processed-pdfs/{file_hash}")
 async def delete_processed_pdf(file_hash: str):
     """
-    Delete a processed PDF and all associated data.
+    Delete a processed PDF and all associated data (removes from single index and metadata).
     
     Args:
         file_hash: MD5 hash of the PDF file
@@ -351,38 +346,27 @@ async def delete_processed_pdf(file_hash: str):
             - 500: If error during deletion
     """
     try:
-        # Load metadata to get file information
-        try:
-            metadata = pdf_metadata_manager.load_pdf_metadata(file_hash)
-        except HTTPException as e:
-            if "not found" in str(e.detail).lower():
-                raise HTTPException(status_code=404, detail=f"Processed PDF not found: {file_hash}")
-            raise
+        # Check if metadata exists
+        metadata = get_document_metadata(file_hash)
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"Processed PDF not found: {file_hash}")
         
-        # Delete FAISS index
-        faiss_filename = metadata.get("vector_storage", {}).get("faiss_filename", "")
-        faiss_deleted = False
-        if faiss_filename:
-            faiss_deleted = vector_store.delete_index(faiss_filename)
+        # Note: We cannot easily remove specific document embeddings from the single FAISS index
+        # without rebuilding the entire index. This would require:
+        # 1. Loading all documents except the one to delete
+        # 2. Regenerating embeddings
+        # 3. Rebuilding the index
+        # For now, we'll just remove the metadata
         
-        # Delete metadata
-        metadata_deleted = pdf_metadata_manager.delete_pdf_metadata(file_hash)
-        
-        # Delete PDF file
-        pdf_filename = metadata.get("file_info", {}).get("stored_filename", "")
-        pdf_deleted = False
-        if pdf_filename:
-            pdf_path = DOCUMENTS_DIR / pdf_filename
-            if pdf_path.exists():
-                pdf_path.unlink()
-                pdf_deleted = True
+        # Delete document metadata
+        metadata_deleted = remove_document_metadata(file_hash)
         
         return {
-            "message": f"Processed PDF {file_hash} deleted successfully",
+            "message": f"Processed PDF {file_hash} metadata deleted successfully",
+            "note": "Document embeddings remain in FAISS index. Full index rebuild required to completely remove.",
             "deleted_components": {
-                "pdf_file": pdf_deleted,
-                "faiss_index": faiss_deleted,
-                "metadata": metadata_deleted
+                "metadata": metadata_deleted,
+                "faiss_embeddings": False  # Would require full rebuild
             }
         }
         
@@ -392,32 +376,25 @@ async def delete_processed_pdf(file_hash: str):
         raise HTTPException(status_code=500, detail=f"Error deleting processed PDF: {str(e)}")
 
 
-@router.get("/faiss-indices")
-async def list_faiss_indices():
+@router.get("/faiss-index")
+async def get_faiss_index_info():
     """
-    List all available FAISS index files.
+    Get information about the single FAISS index.
     
     Returns:
-        Dict: List of FAISS index files with information
+        Dict: FAISS index information
     """
     try:
-        indices = vector_store.list_indices()
-        index_info = []
+        if not vector_store.index_exists():
+            return {
+                "message": "No FAISS index found",
+                "exists": False
+            }
         
-        for index_name in indices:
-            try:
-                info = vector_store.get_index_info(index_name)
-                index_info.append(info)
-            except:
-                index_info.append({
-                    "filename": index_name,
-                    "error": "Could not load index info"
-                })
+        index_info = vector_store.get_index_info()
+        index_info["exists"] = True
         
-        return {
-            "indices": index_info,
-            "total_count": len(indices)
-        }
+        return index_info
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing FAISS indices: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting FAISS index info: {str(e)}")

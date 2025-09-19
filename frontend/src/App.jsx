@@ -7,6 +7,7 @@ import UploadPage from './pages/UploadPage'
 import UploadList from './pages/UploadList'
 import ManageSource from './pages/ManageSource'
 import UploadDocument from './pages/UploadDocument'
+import ChatAsk from './pages/ChatAsk'
 
 function HomePage() {
   const handleUploadImage = () => {
@@ -58,13 +59,15 @@ function HomePage() {
               </Button>
             </Link>
             
-            <Button 
-              onClick={handleAsk}
-              className="w-full gap-2 text-lg px-6 py-4 h-auto"
-            >
-              <MessageCircle className="h-6 w-6" />
-              Ask
-            </Button>
+            <Link to="/chat" className="block">
+              <Button 
+                onClick={handleAsk}
+                className="w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <MessageCircle className="h-6 w-6" />
+                Ask
+              </Button>
+            </Link>
             
             <Link to="/manage-source" className="block">
               <Button 
@@ -95,6 +98,7 @@ function App() {
         <Route path="/files" element={<UploadList />} />
         <Route path="/manage-source" element={<ManageSource />} />
         <Route path="/upload-document" element={<UploadDocument />} />
+        <Route path="/chat" element={<ChatAsk />} />
       </Routes>
       <Toaster />
     </BrowserRouter>
