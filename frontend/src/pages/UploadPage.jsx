@@ -2,13 +2,11 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { useState, useRef } from 'react'
 import { Button } from '../components/ui/button'
-import { Progress } from '../components/ui/progress'
 import { toast } from '../hooks/use-toast'
 import { uploadImages, getDetections, updateObjectsMetadata } from '../lib/api'
 
 function UploadPage() {
   const [selectedFiles, setSelectedFiles] = useState([])
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
@@ -114,12 +112,9 @@ function UploadPage() {
     }
 
     setIsUploading(true)
-    setUploadProgress(0)
 
     try {
-      const result = await uploadImages(selectedFiles, (progress) => {
-        setUploadProgress(progress)
-      })
+      const result = await uploadImages(selectedFiles)
 
       // Success: process object detection for each uploaded file
       if (result.files && result.files.length > 0) {
@@ -143,9 +138,8 @@ function UploadPage() {
         }
       }
       
-      // Reset files and progress
+      // Reset files
       setSelectedFiles([])
-      setUploadProgress(0)
       
       // Clear file input
       if (fileInputRef.current) {
@@ -265,13 +259,11 @@ function UploadPage() {
               
               {isUploading && (
                 <div className="space-y-3" role="status" aria-live="polite">
-                  <Progress 
-                    value={uploadProgress} 
-                    className="w-full h-2"
-                    aria-label={`Upload progress: ${uploadProgress}% complete`}
-                  />
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 rounded-full animate-pulse"></div>
+                  </div>
                   <p id="upload-status" className="text-center text-sm text-gray-600">
-                    {uploadProgress}% uploaded
+                    Uploading files...
                   </p>
                 </div>
               )}

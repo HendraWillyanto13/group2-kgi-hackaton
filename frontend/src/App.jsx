@@ -1,31 +1,27 @@
-import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Upload } from 'lucide-react'
+import { Upload, MessageCircle, FolderOpen, FileText } from 'lucide-react'
 import { Button } from './components/ui/button'
-import { Input } from './components/ui/input'
-import { Progress } from './components/ui/progress'
 import { Toaster } from './components/ui/toaster'
 import { toast } from './hooks/use-toast'
 import UploadPage from './pages/UploadPage'
 import UploadList from './pages/UploadList'
+import ManageSource from './pages/ManageSource'
 
 function HomePage() {
-  const [progress, setProgress] = useState(33)
-  const [inputValue, setInputValue] = useState('')
-
-  const handleProgressUpdate = () => {
-    const newProgress = progress >= 100 ? 0 : progress + 10
-    setProgress(newProgress)
-    toast.success(`Progress updated to ${newProgress}%`)
+  const handleUploadImage = () => {
+    toast.success('Navigating to Upload Image...')
   }
 
-  const handleInputSubmit = () => {
-    if (inputValue.trim()) {
-      toast.success(`Input submitted: ${inputValue}`)
-      setInputValue('')
-    } else {
-      toast.error('Please enter some text')
-    }
+  const handleUploadDocument = () => {
+    toast.success('Navigating to Upload Document...')
+  }
+
+  const handleAsk = () => {
+    toast.success('Ask functionality activated...')
+  }
+
+  const handleManageSource = () => {
+    toast.success('Navigating to Manage Source...')
   }
 
   return (
@@ -33,76 +29,53 @@ function HomePage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">
-            Vite + React + Tailwind
+            KGI Hackaton - Group 2
           </h1>
           <p className="text-gray-600 text-center mb-8">
-            shadcn/ui Components Demo
+            Upload, Ask, and Manage your documents
           </p>
           
-          {/* Navigation */}
-          <div className="mb-8 text-center">
-            <Link to="/upload">
-              <Button className="gap-2 text-lg px-6 py-3">
-                <Upload className="h-5 w-5" />
-                Upload Images
+          {/* Main Action Buttons */}
+          <div className="space-y-4 mb-8">
+            <Link to="/upload" className="block">
+              <Button 
+                onClick={handleUploadImage}
+                className="w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <Upload className="h-6 w-6" />
+                Upload Image
+              </Button>
+            </Link>
+            
+            <Button 
+              onClick={handleUploadDocument}
+              className="w-full gap-2 text-lg px-6 py-4 h-auto"
+            >
+              <FileText className="h-6 w-6" />
+              Upload Document
+            </Button>
+            
+            <Button 
+              onClick={handleAsk}
+              className="w-full gap-2 text-lg px-6 py-4 h-auto"
+            >
+              <MessageCircle className="h-6 w-6" />
+              Ask
+            </Button>
+            
+            <Link to="/manage-source" className="block">
+              <Button 
+                onClick={handleManageSource}
+                className="w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <FolderOpen className="h-6 w-6" />
+                Manage Source
               </Button>
             </Link>
           </div>
-          
-          {/* Progress Section */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Progress Component</h2>
-            <div className="space-y-4">
-              <Progress value={progress} className="w-full" />
-              <p className="text-sm text-gray-600">Progress: {progress}%</p>
-              <Button onClick={handleProgressUpdate} className="bg-green-600 hover:bg-green-700">
-                Update Progress
-              </Button>
-            </div>
-          </div>
-          
-          {/* Input Section */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Input Component</h2>
-            <div className="space-y-4">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Enter some text..."
-                className="w-full"
-              />
-              <Button 
-                onClick={handleInputSubmit}
-                variant="outline" 
-                className="w-full"
-              >
-                Submit Input
-              </Button>
-            </div>
-          </div>
-          
-          {/* Button Variants Section */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Button Variants</h2>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => toast.success('Default clicked!')}>Default</Button>
-              <Button variant="secondary" onClick={() => toast.success('Secondary clicked!')}>
-                Secondary
-              </Button>
-              <Button variant="outline" onClick={() => toast.success('Outline clicked!')}>
-                Outline
-              </Button>
-              <Button variant="ghost" onClick={() => toast.success('Ghost clicked!')}>
-                Ghost
-              </Button>
-              <Button variant="destructive" onClick={() => toast.error('Destructive clicked!')}>
-                Destructive
-              </Button>
-            </div>
-          </div>
 
           <div className="text-center text-sm text-gray-500">
-            Edit <code className="bg-gray-100 px-2 py-1 rounded">src/App.jsx</code> and save to test HMR
+            Choose an action above to get started
           </div>
         </div>
       </div>
@@ -117,6 +90,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/files" element={<UploadList />} />
+        <Route path="/manage-source" element={<ManageSource />} />
       </Routes>
       <Toaster />
     </BrowserRouter>

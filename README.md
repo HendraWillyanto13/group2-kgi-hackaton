@@ -7,6 +7,10 @@ A full-stack monorepo template with FastAPI backend and placeholder frontend dir
 - ✅ **FastAPI Backend**: Modern, fast web framework with file upload support
 - ✅ **Health Check Endpoint**: GET `/health` returning `{"status": "ok"}`
 - ✅ **File Upload Endpoints**: Single and multiple file upload support
+- ✅ **PDF Processing**: PDF upload, text extraction, and embeddings generation
+- ✅ **Document Management**: Manage Source page with filtering, sorting, and deletion
+- ✅ **FAISS Vector Storage**: Vector embeddings storage and retrieval
+- ✅ **React Frontend**: Modern React application with routing and UI components
 - ✅ **UV Package Manager**: Fast Python package management
 - ✅ **Interactive API Docs**: Auto-generated Swagger UI and ReDoc
 - ✅ **CORS Support**: Configured for cross-origin requests
@@ -20,15 +24,33 @@ A full-stack monorepo template with FastAPI backend and placeholder frontend dir
 │   │   ├── main.py         # FastAPI application
 │   │   ├── routes/
 │   │   │   ├── health.py   # Health check endpoint
-│   │   │   └── upload.py   # File upload endpoints
-│   │   └── __init__.py
-│   ├── pyproject.toml      # uv dependencies and configuration
-│   └── README.md           # Backend-specific documentation
-├── frontend/               # Frontend application (placeholder)
-│   └── README.md           # Frontend setup instructions
-├── README.md               # This file
-├── note-day1.md           # Project requirements and tasks
-└── note-day2.md           # Additional project notes
+│   │   │   ├── upload.py   # File upload endpoints
+│   │   │   ├── detection.py # Object detection endpoints
+│   │   │   └── pdf_embeddings.py # PDF processing and embeddings
+│   │   └── utils/
+│   │       ├── azure_openai_service.py # Azure OpenAI integration
+│   │       ├── faiss_storage.py # FAISS vector storage
+│   │       └── pdf_processor.py # PDF processing utilities
+│   ├── documents/          # Processed PDF storage
+│   ├── faiss/             # FAISS vector indices
+│   ├── metadata/          # PDF metadata storage
+│   ├── uploads/           # Uploaded image files
+│   ├── pyproject.toml     # uv dependencies and configuration
+│   └── README.md          # Backend-specific documentation
+├── frontend/              # React application
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/         # Application pages
+│   │   │   ├── UploadPage.jsx    # Image upload page
+│   │   │   ├── UploadList.jsx    # Image list page
+│   │   │   └── ManageSource.jsx  # Document management page
+│   │   ├── lib/           # Utilities and API client
+│   │   └── hooks/         # Custom React hooks
+│   ├── package.json       # Frontend dependencies
+│   └── README.md          # Frontend setup instructions
+├── README.md              # This file
+├── docker-compose.yml     # Docker services configuration
+└── issues#1.md           # Feature requirements and tasks
 ```
 
 ## Quick Start
@@ -55,7 +77,37 @@ A full-stack monorepo template with FastAPI backend and placeholder frontend dir
 
 ### Frontend Setup
 
-The frontend directory is currently a placeholder. See `frontend/README.md` for setup instructions with your preferred frontend framework.
+1. **Install frontend dependencies**:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Access the frontend**:
+   - Frontend App: http://localhost:5173
+   - Features available:
+     - Upload Image: Upload and detect objects in images
+     - Upload Document: Process PDF documents with embeddings
+     - Ask: Query functionality (placeholder)
+     - Manage Source: Document management with filtering, sorting, and deletion
+
+### ManageSource Feature
+
+The Manage Source page provides comprehensive document management capabilities:
+
+- **Document List**: View all processed PDF documents with metadata
+- **Filtering**: Filter documents by name, upload date, and file size
+- **Sorting**: Sort documents by name, date, or size (ascending/descending)
+- **Multiple Selection**: Select multiple documents for batch operations
+- **Document Preview**: Open PDF documents in a new tab for preview
+- **Document Deletion**: Delete selected documents with confirmation dialog
+- **Toast Notifications**: Success/failure notifications for operations
+- **Navigation**: Seamless navigation between pages
 
 ## API Endpoints
 
@@ -65,8 +117,16 @@ The frontend directory is currently a placeholder. See `frontend/README.md` for 
 | GET | `/health` | Health check - returns `{"status": "ok"}` |
 | POST | `/api/upload` | Single file upload - returns filename + size |
 | POST | `/api/upload-multiple` | Multiple file uploads |
+| POST | `/api/process-pdf-embeddings` | Process PDF file and generate embeddings |
+| GET | `/api/processed-pdfs` | List all processed PDF documents |
+| GET | `/api/processed-pdfs/{file_hash}` | Get detailed information about a processed PDF |
+| DELETE | `/api/processed-pdfs/{file_hash}` | Delete a processed PDF and all associated data |
+| GET | `/api/detection/{filename}` | Get object detections for an image |
+| POST | `/api/metadata/{filename}` | Update objects metadata |
 | GET | `/docs` | Swagger UI documentation |
 | GET | `/redoc` | ReDoc documentation |
+| GET | `/documents/{filename}` | Serve processed PDF files |
+| GET | `/uploads/{filename}` | Serve uploaded image files |
 
 ## Testing the API
 
