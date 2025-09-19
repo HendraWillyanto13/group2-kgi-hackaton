@@ -549,3 +549,47 @@ async def get_documents():
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving documents: {str(e)}")
+
+@router.delete("/documents")
+async def delete_documents(filenames: List[str]):
+    """
+    Delete multiple PDF documents.
+    
+    Args:
+        filenames: List of stored filenames to delete
+        
+    Returns:
+        dict: Result of the deletion operation
+    """
+    try:
+        deleted_files = []
+        not_found_files = []
+        error_files = []
+        
+        for filename in filenames:
+            try:
+                # Remove from documents directory
+                file_path = DOCUMENTS_DIR / filename
+                if file_path.exists():
+                    file_path.unlink()
+                    deleted_files.append(filename)
+                    
+                    # Remove from metadata
+                    remove_upload_metadata(filename)
+                else:
+                    not_found_files.append(filename)
+                    
+            except Exception as e:
+                error_files.append({"filename": filename, "error": str(e)})
+        
+        return {
+            "message": f"Deletion completed. {len(deleted_files)} files deleted.",
+            "deleted_files": deleted_files,
+            "not_found_files": not_found_files,
+            "error_files": error_files,
+            "total_requested": len(filenames),
+            "total_deleted": len(deleted_files)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting documents: {str(e)}")

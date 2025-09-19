@@ -40,6 +40,11 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
+# Mount static files for processed PDF documents
+DOCUMENTS_DIR = Path("documents")
+DOCUMENTS_DIR.mkdir(exist_ok=True)
+app.mount("/documents", StaticFiles(directory=str(DOCUMENTS_DIR)), name="documents")
+
 # Mount the uploads-metadata.json file directly
 from fastapi import Response
 import json
