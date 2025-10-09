@@ -6,9 +6,9 @@ import { Toaster } from '../components/ui/toaster';
 const Layout = ({ children }) => {
   // User state - for demo purposes, using static user data
   const [user] = useState({
-    name: 'John Doe',
-    role: 'Operator',
-    email: 'john.doe@komatsu.co.id'
+    name: 'Dwi Fitriansyah',
+    role: 'KUI - Marketing',
+    email: 'dwi.fitriansyah@global.komatsu'
   });
 
   const handleLogout = () => {
