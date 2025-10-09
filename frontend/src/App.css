@@ -1,8 +1,8 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .logo {
@@ -39,4 +39,23 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Custom button styling for Komatsu theme */
+.komatsu-button {
+  background-color: rgb(20, 10, 154) !important;
+  color: rgb(255, 200, 47) !important;
+  border: none !important;
+}
+
+.komatsu-button:hover {
+  background-color: rgb(15, 8, 125) !important;
+  color: rgb(255, 200, 47) !important;
+  opacity: 0.9;
+}
+
+.komatsu-button:focus {
+  background-color: rgb(20, 10, 154) !important;
+  color: rgb(255, 200, 47) !important;
+  box-shadow: 0 0 0 2px rgba(255, 200, 47, 0.3);
 }

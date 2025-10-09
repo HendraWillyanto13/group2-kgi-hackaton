@@ -1,88 +1,107 @@
+import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { Upload, MessageCircle, FolderOpen, FileText } from 'lucide-react'
+import { Upload, MessageCircle, FolderOpen, FileText, FileSpreadsheet, BarChart3, Users, Settings, LogOut, User } from 'lucide-react'
 import { Button } from './components/ui/button'
-import { Toaster } from './components/ui/toaster'
 import { toast } from './hooks/use-toast'
-import UploadPage from './pages/UploadPage'
+import Layout from './components/Layout'
 import UploadList from './pages/UploadList'
 import ManageSource from './pages/ManageSource'
-import UploadDocument from './pages/UploadDocument'
+import UploadKnowledge from './pages/UploadKnowledge'
 import ChatAsk from './pages/ChatAsk'
+import './App.css'
 
 function HomePage() {
-  const handleUploadImage = () => {
-    toast.success('Navigating to Upload Image...')
-  }
-
-  const handleUploadDocument = () => {
-    toast.success('Navigating to Upload Document...')
+  const handleUploadKnowledge = () => {
+    toast.success('Navigating to Upload Knowledge...')
   }
 
   const handleAsk = () => {
     toast.success('Ask functionality activated...')
   }
 
-  const handleManageSource = () => {
-    toast.success('Navigating to Manage Source...')
+  const handleAnalyzeData = () => {
+    toast.success('Navigating to Data Analysis...')
+  }
+
+  const handleMaintainWearnessFormula = () => {
+    toast.success('Navigating to Maintain Wearness Formula...')
+  }
+
+  const handleUserManagement = () => {
+    toast.success('Navigating to User Management...')
+  }
+
+  const handleManageKnowledge = () => {
+    toast.success('Navigating to Manage Knowledge...')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="p-8">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">
-            KGI Hackaton - Group 2
-          </h1>
-          <p className="text-gray-600 text-center mb-8">
-            Upload, Ask, and Manage your documents
-          </p>
-          
           {/* Main Action Buttons */}
           <div className="space-y-4 mb-8">
-            <Link to="/upload" className="block">
-              <Button 
-                onClick={handleUploadImage}
-                className="w-full gap-2 text-lg px-6 py-4 h-auto"
-              >
-                <Upload className="h-6 w-6" />
-                Upload Image
-              </Button>
-            </Link>
-            
-            <Link to="/upload-document" className="block">
-              <Button 
-                onClick={handleUploadDocument}
-                className="w-full gap-2 text-lg px-6 py-4 h-auto"
-              >
-                <FileText className="h-6 w-6" />
-                Upload Document
-              </Button>
-            </Link>
-            
             <Link to="/chat" className="block">
               <Button 
                 onClick={handleAsk}
-                className="w-full gap-2 text-lg px-6 py-4 h-auto"
+                className="komatsu-button w-full gap-2 text-lg px-6 py-4 h-auto"
               >
                 <MessageCircle className="h-6 w-6" />
-                Ask
+                Ask AI
+              </Button>
+            </Link>
+
+            <Link to="/upload-knowledge" className="block">
+              <Button 
+                onClick={handleUploadKnowledge}
+                className="komatsu-button w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <FileSpreadsheet className="h-6 w-6" />
+                Upload Knowledge
               </Button>
             </Link>
             
-            <Link to="/manage-source" className="block">
+            <Link to="/analyze" className="block">
               <Button 
-                onClick={handleManageSource}
-                className="w-full gap-2 text-lg px-6 py-4 h-auto"
+                onClick={handleAnalyzeData}
+                className="komatsu-button w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <BarChart3 className="h-6 w-6" />
+                Analyze Data
+              </Button>
+            </Link>
+            
+            <Link to="/manage-knowledge" className="block">
+              <Button 
+                onClick={handleManageKnowledge}
+                className="komatsu-button w-full gap-2 text-lg px-6 py-4 h-auto"
               >
                 <FolderOpen className="h-6 w-6" />
-                Manage Source
+                Manage Knowledge
+              </Button>
+            </Link>
+
+            <Link to="/maintain-wearness-formula" className="block">
+              <Button 
+                onClick={handleMaintainWearnessFormula}
+                className="komatsu-button w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <Settings className="h-6 w-6" />
+                Maintain Wearness Formula
+              </Button>
+            </Link>
+
+            <Link to="/user-management" className="block">
+              <Button 
+                onClick={handleUserManagement}
+                className="komatsu-button w-full gap-2 text-lg px-6 py-4 h-auto"
+              >
+                <Users className="h-6 w-6" />
+                User Management
               </Button>
             </Link>
           </div>
 
-          <div className="text-center text-sm text-gray-500">
-            Choose an action above to get started
-          </div>
         </div>
       </div>
     </div>
@@ -92,15 +111,15 @@ function HomePage() {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/upload" element={<UploadPage />} />
-        <Route path="/files" element={<UploadList />} />
-        <Route path="/manage-source" element={<ManageSource />} />
-        <Route path="/upload-document" element={<UploadDocument />} />
-        <Route path="/chat" element={<ChatAsk />} />
-      </Routes>
-      <Toaster />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/files" element={<UploadList />} />
+          <Route path="/manage-knowledge" element={<ManageSource />} />
+          <Route path="/upload-knowledge" element={<UploadKnowledge />} />
+          <Route path="/chat" element={<ChatAsk />} />
+        </Routes>
+      </Layout>
     </BrowserRouter>
   )
 }

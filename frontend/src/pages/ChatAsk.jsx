@@ -106,10 +106,10 @@ const ChatAsk = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gray-50">
-      {/* Header */}
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Page Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 p-4">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center max-w-4xl mx-auto">
           <div className="flex items-center space-x-3">
             <Link 
               to="/" 
@@ -118,7 +118,7 @@ const ChatAsk = () => {
             >
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Chat Assistant</h1>
+            <h1 className="text-xl font-bold text-gray-800">AI Assistant</h1>
           </div>
           {messages.length > 0 && (
             <button
@@ -133,11 +133,11 @@ const ChatAsk = () => {
       </div>
 
       {/* Chat Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 mt-8">
-            <div className="text-lg mb-2">👋 Welcome to Chat Assistant!</div>
-            <p>Ask me anything and I'll help you based on the uploaded documents and our conversation history.</p>
+            <div className="text-lg mb-2">👋 Welcome to U/C AI Assistant!</div>
+            <p>Ask me anything related and I'll help you based on the uploaded documents and our conversation history.</p>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -202,7 +202,9 @@ const ChatAsk = () => {
       </div>
 
       {/* Input Form */}
+            {/* Input Section */}
       <div className="bg-white border-t border-gray-200 p-4">
+        <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSubmit} className="flex space-x-3">
           <div className="flex-1">
             <textarea
@@ -238,6 +240,7 @@ const ChatAsk = () => {
         {/* Input hint */}
         <div className="text-xs text-gray-500 mt-2 px-1">
           Press Enter to send, Shift+Enter for new line
+        </div>
         </div>
       </div>
     </div>

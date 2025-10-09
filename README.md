@@ -1,4 +1,4 @@
-# FastAPI Monorepo Project
+# KGI Hackaton Group 2
 
 A full-stack monorepo template with FastAPI backend and placeholder frontend directory, built with Python 3.12 development container support.
 
